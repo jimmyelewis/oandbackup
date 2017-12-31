@@ -70,3 +70,4 @@ openpgp-api-lib is written by Dominik Schürmann and licensed under Apache Licen
 author
 ======
 jens stein
+jimmy

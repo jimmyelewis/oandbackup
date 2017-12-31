@@ -41,6 +41,11 @@ android {
     lintOptions {
         abortOnError false
     }
+
+    defaultConfig{
+        versionCode 20
+        versionName "0.2.13.0"
+    }
 }
 
 task wrapper(type: Wrapper) {

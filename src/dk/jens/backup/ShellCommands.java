@@ -24,6 +24,7 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
 {
     final static String TAG = OAndBackup.TAG;
     final static String EXTERNAL_FILES = "external_files";
+    final static String EXPANSION_FILES = "expansion_files";
     SharedPreferences prefs;
     String busybox;
     ArrayList<String> users;
@@ -102,8 +103,31 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
             }
         } else if(!backupExternalFiles && backupMode != AppInfo.MODE_APK) {
             String data = packageData.substring(packageData.lastIndexOf("/"));
-            deleteBackup(new File(backupSubDir, EXTERNAL_FILES  + "/" + data + ".zip.gpg"));
+            deleteBackup(new File(backupSubDir, EXTERNAL_FILES  + "/" + data + ".zip"));
         }
+
+
+
+        File expansionDir = getExpansionDirectoryPath(context, packageData);
+        File backupSubDirExpansionFiles = null;
+        boolean backupExpansionFiles = prefs.getBoolean("backupExpansionFiles", false);
+
+        if (backupExpansionFiles && backupMode != AppInfo.MODE_APK && expansionDir != null) {
+            backupSubDirExpansionFiles = new File(backupSubDir, EXPANSION_FILES);
+            if (backupSubDirExpansionFiles.exists() || backupSubDirExpansionFiles.mkdir()) {
+                commands.add("cp -R" + followSymlinks + " " +
+                        swapBackupDirPath(expansionDir.getAbsolutePath()) +
+                        " " + swapBackupDirPath(backupSubDir.getAbsolutePath() +
+                        "/" + EXPANSION_FILES));
+            } else {
+                Log.e(TAG, "couldn't create " + backupSubDirExpansionFiles.getAbsolutePath());
+            }
+        } else if (!backupExpansionFiles && backupMode != AppInfo.MODE_APK) {
+            String data = packageData.substring(packageData.lastIndexOf("/"));
+            deleteBackup(new File(backupSubDir, EXPANSION_FILES  + "/" + data + ".zip"));
+        }
+
+
         List<String> errors = new ArrayList<>();
         int ret = CommandHandler.runCmd("su", commands, line -> {},
             errors::add, e -> {
@@ -147,12 +171,14 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
             int zipret = compress(new File(backupSubDir, folder));
             if(backupSubDirExternalFiles != null)
                 zipret += compress(new File(backupSubDirExternalFiles, packageData.substring(packageData.lastIndexOf("/") + 1)));
+            if(backupSubDirExpansionFiles != null)
+                zipret += compress(new File(backupSubDirExpansionFiles, packageData.substring(packageData.lastIndexOf("/") + 1)));
             if(zipret != 0)
                 ret += zipret;
         }
         // delete old encrypted files if encryption is not enabled
         if(!prefs.getBoolean(Constants.PREFS_ENABLECRYPTO, false))
-            Crypto.cleanUpEncryptedFiles(backupSubDir, packageApk, packageData, backupMode, prefs.getBoolean("backupExternalFiles", false));
+            Crypto.cleanUpEncryptedFiles(backupSubDir, packageApk, packageData, backupMode, prefs.getBoolean("backupExternalFiles", false), prefs.getBoolean("backupExpansionFiles", false));
         return ret;
     }
     public int doRestore(Context context, File backupSubDir, String label, String packageName, String dataDir)
@@ -176,6 +202,17 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
                     String externalFilesPath = context.getExternalFilesDir(null).getAbsolutePath();
                     externalFilesPath = externalFilesPath.substring(0, externalFilesPath.lastIndexOf(context.getApplicationInfo().packageName));
                     Compression.unzip(new File(externalFiles, dataDirName + ".zip"), new File(externalFilesPath));
+                }
+            }
+
+            if(prefs.getBoolean("backupExpansionFiles", false))
+            {
+                File expansionFiles = new File(backupSubDir, EXPANSION_FILES);
+                if(expansionFiles.exists())
+                {
+                    String expansionFilesPath = context.getObbDir().getAbsolutePath();
+                    expansionFilesPath = expansionFilesPath.substring(0, expansionFilesPath.lastIndexOf(context.getApplicationInfo().packageName));
+                    Compression.unzip(new File(expansionFiles, dataDirName + ".zip"), new File(expansionFilesPath));
                 }
             }
 
@@ -322,7 +359,7 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
         Matcher gid = gidPattern.matcher(stat);
         if(!uid.find() || !gid.find())
             return null;
-        ArrayList<String> res = new ArrayList<String>();
+        ArrayList<String> res = new ArrayList<>();
         res.add(uid.group(1));
         res.add(gid.group(1));
         return res;
@@ -840,4 +877,17 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
         }
         return null;
     }
+
+    public File getExpansionDirectoryPath(Context context, String packageData) {
+        if(Build.VERSION.SDK_INT >= 8)
+        {
+            String expansionFilesPath = context.getObbDir().getAbsolutePath();
+            // get path of own externalfilesdir and then cutting at the packagename to get the general path
+            expansionFilesPath = expansionFilesPath.substring(0, expansionFilesPath.lastIndexOf(context.getApplicationInfo().packageName));
+            File expansionFilesDir = new File(expansionFilesPath, new File(packageData).getName());
+            if(expansionFilesDir.exists())
+                return expansionFilesDir;
+        }
+        return null;
+}
 }

@@ -113,6 +113,8 @@
     <string name="prefs_enableSpecialBackups">enable special backups</string>
     <string name="prefs_backupExternalFiles">handle external data</string>
     <string name="prefs_summaryBackupExternalFiles">backs up and restores data that is placed on the external storage (e.g. /sdcard/Android/data/)</string>
+    <string name="prefs_backupExpansionFiles">handle expansion data</string>
+    <string name="prefs_summaryBackupExpansionFiles">backs up and restores expansion data (e.g. /sdcard/Android/obb/)</string>
     <string name="prefs_cryptoMenu">cryptography</string>
     <string name="prefs_enableCrypto">enable</string>
     <string name="prefs_summaryEnableCrypto">enable encryption when backing up files and decryption when restoring</string>

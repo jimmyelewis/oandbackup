@@ -144,6 +144,10 @@ public class Crypto
                     File externalFiles = new File(backupSubDir, ShellCommands.EXTERNAL_FILES + "/" + data + ".zip.gpg");
                     if(externalFiles.exists())
                         files[i++] = externalFiles;
+
+                    File expansionFiles = new File(backupSubDir, ShellCommands.EXPANSION_FILES + "/" + data + ".zip.gpg");
+                    if(expansionFiles.exists())
+                        files[i++] = expansionFiles;
                 }
             }
             decryptFiles(context, files);
@@ -189,6 +193,13 @@ public class Crypto
                 File extFiles = new File(backupSubDir, ShellCommands.EXTERNAL_FILES  + "/" + data + ".zip");
                 if(extFiles.exists())
                     files[i++] = extFiles;
+            }
+
+            if(prefs.getBoolean("backupExpansionFiles", false))
+            {
+                File expansionFiles = new File(backupSubDir, ShellCommands.EXPANSION_FILES  + "/" + data + ".zip");
+                if(expansionFiles.exists())
+                    files[i++] = expansionFiles;
             }
         }
         encryptFiles(context, files);
@@ -430,10 +441,12 @@ public class Crypto
                     ShellCommands.deleteBackup(new File(backupSubDir, data + ".zip"));
                 if(new File(backupSubDir, ShellCommands.EXTERNAL_FILES + "/" + data + ".zip.gpg").exists())
                     ShellCommands.deleteBackup(new File(backupSubDir, ShellCommands.EXTERNAL_FILES + "/" + data + ".zip"));
+                if(new File(backupSubDir, ShellCommands.EXPANSION_FILES + "/" + data + ".zip.gpg").exists())
+                    ShellCommands.deleteBackup(new File(backupSubDir, ShellCommands.EXPANSION_FILES + "/" + data + ".zip"));
             }
         }
     }
-    public static void cleanUpEncryptedFiles(File backupSubDir, String sourceDir, String dataDir, int mode, boolean backupExternalFiles)
+    public static void cleanUpEncryptedFiles(File backupSubDir, String sourceDir, String dataDir, int mode, boolean backupExternalFiles, boolean backupExpansionFiles)
     {
         String apk = sourceDir.substring(sourceDir.lastIndexOf("/") + 1);
         String data = dataDir.substring(dataDir.lastIndexOf("/") + 1);
@@ -444,6 +457,10 @@ public class Crypto
             ShellCommands.deleteBackup(new File(backupSubDir, data + ".zip.gpg"));
             if(backupExternalFiles)
                 ShellCommands.deleteBackup(new File(backupSubDir, ShellCommands.EXTERNAL_FILES  + "/" + data + ".zip.gpg"));
+
+            if(backupExpansionFiles) {
+                ShellCommands.deleteBackup(new File(backupSubDir, ShellCommands.EXPANSION_FILES + "/" + data + ".zip.gpg"));
+            }
         }
     }
 }
